@@ -1,4 +1,4 @@
-import * as BABYLON from 'babylonjs';
+import 'babylonjs';
 import { createStartScene } from '@/core';
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement; // Get the canvas element

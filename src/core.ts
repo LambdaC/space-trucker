@@ -1,4 +1,4 @@
-import { ArcRotateCamera, AxesViewer, Color3, Engine, Mesh, MeshBuilder, PointLight, Scalar, Scene, StandardMaterial, Texture, Vector3, Animation, TrailMesh, GlowLayer, Nullable, IEnvironmentHelperOptions } from "@babylonjs/core";
+import { Animation, ArcRotateCamera, AxesViewer, Color3, Engine, GlowLayer, IEnvironmentHelperOptions, Mesh, MeshBuilder, PointLight, Scalar, Scene, StandardMaterial, Texture, TrailMesh, TransformNode, Vector3 } from "@babylonjs/core";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures";
 
 /**
@@ -20,8 +20,10 @@ export function createStartScene(engine: Engine) {
     const spinAnim = createSpinAnimation();
     star.animations.push(spinAnim);
     scene.beginAnimation(star, 0, 60, true);
-    planets.forEach(p => {
-        glowLayer.addExcludedMesh(p);
+
+    planets.forEach(pCoT => {
+        const p = pCoT.getChildMeshes()[0];
+        glowLayer.addExcludedMesh(p as Mesh);
         p.animations.push(spinAnim);
         scene.beginAnimation(p, 0, 60, true, Scalar.RandomRange(0.1, 3));
     });
@@ -128,7 +130,7 @@ function createPlanet(opts: {
     scale: number;
     color: Color3;
     rocky: boolean;
-}, scene: Scene): Mesh {
+}, scene: Scene): TransformNode {
     const planet = MeshBuilder.CreateSphere(opts.name, { diameter: 1 }, scene);
     const mat = new StandardMaterial(planet.name + "-mat", scene);
     mat.diffuseColor = mat.specularColor = opts.color;
@@ -142,17 +144,20 @@ function createPlanet(opts: {
 
     planet.material = mat;
     planet.scaling.setAll(opts.scale);
-    planet.position.x = opts.posRadius * Math.sin(opts.posRadians);
-    planet.position.z = opts.posRadius * Math.cos(opts.posRadians);
 
-    (planet as any).orbitOptions = opts;
-    (planet as any).orbitAnimationObserver = createAndStartOrbitAnimation(planet, scene);
-    return planet;
+    const planetCoT = new TransformNode(planet.name + "-CoT", scene);
+    planet.parent = planetCoT;
+    planetCoT.position.x = opts.posRadius * Math.sin(opts.posRadians);
+    planetCoT.position.z = opts.posRadius * Math.cos(opts.posRadians);
+
+    (planetCoT as any).orbitOptions = opts;
+    (planetCoT as any).orbitAnimationObserver = createAndStartOrbitAnimation(planetCoT, scene);
+    return planetCoT;
 }
 
-function createAndStartOrbitAnimation(planet: Mesh, scene: Scene) {
+function createAndStartOrbitAnimation(planetCoT: TransformNode, scene: Scene) {
     const Gm = 6672.59 * 0.07;
-    const opts = (planet as any).orbitOptions;
+    const opts = (planetCoT as any).orbitOptions;
     const rCubed = Math.pow(opts.posRadius, 3);
     const period = Scalar.TwoPi * Math.sqrt(rCubed / Gm);
     const v = Math.sqrt(Gm / opts.posRadius);
@@ -160,15 +165,16 @@ function createAndStartOrbitAnimation(planet: Mesh, scene: Scene) {
     const circum = Scalar.TwoPi * opts.posRadius;
     let angPos = opts.posRadians;
 
-    planet.computeWorldMatrix(true);
-    let planetTrail = new TrailMesh(planet.name + "-trail", planet, scene, .1, circum, true);
+    planetCoT.computeWorldMatrix(true);
+    const planet = planetCoT.getChildMeshes()[0];
+    let planetTrail = new TrailMesh(planet.name + "-trail", planetCoT, scene, 0.1, circum, true);
     let trailMat = new StandardMaterial(planetTrail.name + "-mat", scene);
     trailMat.emissiveColor = trailMat.specularColor = trailMat.diffuseColor = opts.color;
     planetTrail.material = trailMat;
 
     let preRenderObsv = scene.onBeforeRenderObservable.add(sc => {
-        planet.position.x = opts.posRadius * Math.sin(angPos);
-        planet.position.z = opts.posRadius * Math.cos(angPos);
+        planetCoT.position.x = opts.posRadius * Math.sin(angPos);
+        planetCoT.position.z = opts.posRadius * Math.cos(angPos);
         angPos = Scalar.Repeat(angPos + w, Scalar.TwoPi);
     });
     return preRenderObsv;

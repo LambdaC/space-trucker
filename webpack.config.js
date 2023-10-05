@@ -9,17 +9,19 @@ const isProduction = process.env.NODE_ENV == 'production';
 
 const config = {
     entry: './src/index.ts',
-    devtool: 'source-map',
     output: {
         path: path.resolve(__dirname, 'dist'),
     },
     devServer: {
         open: true,
         host: 'localhost',
+        port: 9000,
+        hot: true,
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: 'index.html',
+            template: path.resolve(__dirname, "public/index.html"),
+            // inject: true
         }),
 
         // Add your plugins here
@@ -47,22 +49,17 @@ const config = {
             "@": path.resolve(__dirname, "src/")
         }
     },
-
-    devServer: {
-        port: 9000,
-        hot: true,
-    }
 };
 
 module.exports = () => {
     if (isProduction) {
         config.mode = 'production';
 
-
         config.plugins.push(new WorkboxWebpackPlugin.GenerateSW());
 
     } else {
         config.mode = 'development';
+        config.devtool = 'source-map';
     }
     return config;
 };

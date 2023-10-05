@@ -1,5 +1,8 @@
 import { ArcRotateCamera, AxesViewer, Color3, Engine, Mesh, MeshBuilder, PointLight, Scalar, Scene, StandardMaterial, Texture, Vector3, Animation, TrailMesh, GlowLayer, Nullable, IEnvironmentHelperOptions } from "@babylonjs/core";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures";
+import distortTexture from "../assets/textures/distortion.png";
+import rockTextureN from "../assets/textures/rockn.png";
+import rockTexture from "../assets/textures/rock.png";
 
 /**
  * scene、camera
@@ -66,7 +69,7 @@ function createStar(scene: Scene) {
     const mat = new StandardMaterial("starMat", scene);
     star.material = mat;
     mat.emissiveColor = new Color3(0.37, 0.333, 0.11);
-    mat.diffuseTexture = new Texture("https://assets.babylonjs.com/textures/distortion.png", scene);
+    mat.diffuseTexture = new Texture(distortTexture, scene);
     mat.diffuseTexture.level = 1.8;
     return star
 }
@@ -134,10 +137,10 @@ function createPlanet(opts: {
     mat.diffuseColor = mat.specularColor = opts.color;
     mat.specularPower = 0;
     if (opts.rocky === true) {
-        mat.bumpTexture = new Texture("https://assets.babylonjs.com/textures/rockn.png", scene);
-        mat.diffuseTexture = new Texture("https://assets.babylonjs.com/textures/rock.png", scene);
+        mat.bumpTexture = new Texture(rockTextureN, scene);
+        mat.diffuseTexture = new Texture(rockTexture, scene);
     } else {
-        mat.diffuseTexture = new Texture("https://assets.babylonjs.com/textures/distortion.png", scene);
+        mat.diffuseTexture = new Texture(distortTexture, scene);
     }
 
     planet.material = mat;

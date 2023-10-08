@@ -1,8 +1,7 @@
-import { ArcRotateCamera, AxesViewer, Color3, Engine, Mesh, MeshBuilder, PointLight, Scalar, Scene, StandardMaterial, Texture, Vector3, Animation, TrailMesh, GlowLayer, Nullable, IEnvironmentHelperOptions } from "@babylonjs/core";
+import { ArcRotateCamera, AxesViewer, Color3, Engine, GlowLayer, IEnvironmentHelperOptions, MeshBuilder, PointLight, Scalar, Scene, StandardMaterial, Texture, Vector3 } from "@babylonjs/core";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures";
 import distortTexture from "../assets/textures/distortion.png";
-import rockTextureN from "../assets/textures/rockn.png";
-import rockTexture from "../assets/textures/rock.png";
+import { AstroFactory } from "./astroFactory";
 
 /**
  * scene、camera
@@ -20,7 +19,7 @@ export function createStartScene(engine: Engine) {
     const planets = populatePlanetarySystem(scene);
 
     const glowLayer = new GlowLayer("glowLayer", scene);
-    const spinAnim = createSpinAnimation();
+    const spinAnim = AstroFactory.createSpinAnimation();
     star.animations.push(spinAnim);
     scene.beginAnimation(star, 0, 60, true);
     planets.forEach(p => {
@@ -116,81 +115,11 @@ function populatePlanetarySystem(scene: Scene) {
         color: new Color3(0, 0.3, 1),
         rocky: false
     };
-    planets.push(createPlanet(hg, scene));
-    planets.push(createPlanet(aphro, scene));
-    planets.push(createPlanet(tellus, scene));
-    planets.push(createPlanet(ares, scene));
-    planets.push(createPlanet(zeus, scene));
+    planets.push(AstroFactory.createPlanet(hg, scene));
+    planets.push(AstroFactory.createPlanet(aphro, scene));
+    planets.push(AstroFactory.createPlanet(tellus, scene));
+    planets.push(AstroFactory.createPlanet(ares, scene));
+    planets.push(AstroFactory.createPlanet(zeus, scene));
     return planets;
 }
 
-function createPlanet(opts: {
-    name: string;
-    posRadians: number;
-    posRadius: number;
-    scale: number;
-    color: Color3;
-    rocky: boolean;
-}, scene: Scene): Mesh {
-    const planet = MeshBuilder.CreateSphere(opts.name, { diameter: 1 }, scene);
-    const mat = new StandardMaterial(planet.name + "-mat", scene);
-    mat.diffuseColor = mat.specularColor = opts.color;
-    mat.specularPower = 0;
-    if (opts.rocky === true) {
-        mat.bumpTexture = new Texture(rockTextureN, scene);
-        mat.diffuseTexture = new Texture(rockTexture, scene);
-    } else {
-        mat.diffuseTexture = new Texture(distortTexture, scene);
-    }
-
-    planet.material = mat;
-    planet.scaling.setAll(opts.scale);
-    planet.position.x = opts.posRadius * Math.sin(opts.posRadians);
-    planet.position.z = opts.posRadius * Math.cos(opts.posRadians);
-
-    (planet as any).orbitOptions = opts;
-    (planet as any).orbitAnimationObserver = createAndStartOrbitAnimation(planet, scene);
-    return planet;
-}
-
-function createAndStartOrbitAnimation(planet: Mesh, scene: Scene) {
-    const Gm = 6672.59 * 0.07;
-    const opts = (planet as any).orbitOptions;
-    const rCubed = Math.pow(opts.posRadius, 3);
-    const period = Scalar.TwoPi * Math.sqrt(rCubed / Gm);
-    const v = Math.sqrt(Gm / opts.posRadius);
-    const w = v / period;
-    const circum = Scalar.TwoPi * opts.posRadius;
-    let angPos = opts.posRadians;
-
-    planet.computeWorldMatrix(true);
-    let planetTrail = new TrailMesh(planet.name + "-trail", planet, scene, .1, circum, true);
-    let trailMat = new StandardMaterial(planetTrail.name + "-mat", scene);
-    trailMat.emissiveColor = trailMat.specularColor = trailMat.diffuseColor = opts.color;
-    planetTrail.material = trailMat;
-
-    let preRenderObsv = scene.onBeforeRenderObservable.add(sc => {
-        planet.position.x = opts.posRadius * Math.sin(angPos);
-        planet.position.z = opts.posRadius * Math.cos(angPos);
-        angPos = Scalar.Repeat(angPos + w, Scalar.TwoPi);
-    });
-    return preRenderObsv;
-}
-
-function createSpinAnimation() {
-    let orbitAnim = new Animation("planetspin",
-        "rotation.y", 30,
-        Animation.ANIMATIONTYPE_FLOAT,
-        Animation.ANIMATIONLOOPMODE_CYCLE);
-    const keyFrames = [];
-    keyFrames.push({
-        frame: 0,
-        value: 0
-    });
-    keyFrames.push({
-        frame: 60,
-        value: Scalar.TwoPi
-    });
-    orbitAnim.setKeys(keyFrames);
-    return orbitAnim
-}

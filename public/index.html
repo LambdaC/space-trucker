@@ -26,7 +26,7 @@
 
         #pageContainer {
             position: relative;
-            background-color: transparent;
+            background-color: black;
             margin: 10px;
             padding: 17px;
             border: solid white;
@@ -70,17 +70,29 @@
             left: auto;
             z-index: -10;
         }
+
+        .disable-selection {
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -khtml-user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+            outline: none;
+            -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+            /* mobile webkit */
+        }
     </style>
 </head>
 
-<body>
+<body class="disable-selection">
     <div id="pageContainer">
         <h1>Space-Truckers: The Video Game</h1>
         <div id="landingPageContainer">
             <div id="hero">
             </div>
             <div id="ctaRow">
-                <button>Launch</button>
+                <button id="btnLaunch">Launch</button>
             </div>
             <div id="footer">
                 Copyright Notice: See <a>here</a> for license and copyright

@@ -1,5 +1,6 @@
 import { ArcRotateCamera, Engine, ILoadingScreen, Scene } from "@babylonjs/core";
 import { createStartScene } from "./startscene";
+import { AdvancedDynamicTexture } from "@babylonjs/gui";
 
 export class SpaceTruckerLoadingScreen implements ILoadingScreen {
     private _loadingText: string;
@@ -7,6 +8,9 @@ export class SpaceTruckerLoadingScreen implements ILoadingScreen {
     private _currentAmountLoaded: number;
     private _engine: Engine;
     private _active: boolean = false;
+
+    private _advancedTexture: AdvancedDynamicTexture;
+
 
     private _startScene: {
         scene: Scene;
@@ -19,6 +23,8 @@ export class SpaceTruckerLoadingScreen implements ILoadingScreen {
         this._currentAmountLoaded = 0.00;
         this._engine = engine;
         this._startScene = createStartScene(engine);
+
+        this._advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("myUI");
 
         engine.runRenderLoop(() => {
             if (this._startScene && this._active) {

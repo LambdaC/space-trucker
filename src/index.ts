@@ -1,26 +1,26 @@
-import { createStartScene } from '@/startscene';
 import { Engine } from '@babylonjs/core';
+import logger from './logger';
+import { SpaceTruckerLoadingScreen } from './SpaceTruckerLoadingScreen';
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement; // Get the canvas element
 const engine = new Engine(canvas, true); // Generate the BABYLON 3D engine
-// const engine = new WebGPUEngine(canvas); // Generate the BABYLON 3D engine
-const createScene = function () {
-    const startScene = createStartScene(engine);
-    return startScene.scene;
-    // const scene = new Scene(engine);
-    // scene.createDefaultCameraOrLight(true, true, true);
-    // scene.createDefaultEnvironment({
-    //     createGround: false,
-    //     skyboxSize: 512,
-    // });
-    // MeshBuilder.CreateBox("box", { size: 5 }, scene);
-    // return scene;
-};
-const scene = createScene(); //Call the createScene function
-// Register a render loop to repeatedly render the scene
-engine.runRenderLoop(function () {
-    scene.render();
-});
+logger.logInfo("Created BJS engine");
+
+engine.loadingScreen = new SpaceTruckerLoadingScreen(engine);
+
+
+const launchButton = document.getElementById("btnLaunch") as HTMLButtonElement;
+const btnClickHandler = () => {
+    logger.logInfo("Launch button clicked. Initializing application.");
+    const pageContainer = document.getElementById("pageContainer") as HTMLElement;
+    canvas.classList.remove("background-canva");
+    pageContainer.style.display = "none";
+    launchButton.removeEventListener('click', btnClickHandler);
+
+    engine.displayLoadingUI();
+}
+launchButton.addEventListener('click', btnClickHandler);
+
 // Watch for browser/canvas resize events
 window.addEventListener("resize", function () {
     engine.resize();

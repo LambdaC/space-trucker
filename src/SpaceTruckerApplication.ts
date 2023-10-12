@@ -61,12 +61,12 @@ export class SpaceTruckerApplication {
         // 先保存一下当前的state,下面的方法可能会改变当前state。
         const state = this._stateMachine.state;
 
-        switch (this._stateMachine.state) {
+        switch (state) {
             case AppStates.CREATED:
                 this._create();
                 break;
             case AppStates.INITIALIZING:
-                await this._initialize();
+                this._initialize();
                 break;
             case AppStates.CUTSCENE:
                 this._gotoCutScene();
@@ -94,7 +94,7 @@ export class SpaceTruckerApplication {
         const p = new Promise<void>((resolve) => {
             setTimeout(() => {
                 resolve();
-            }, 5000);
+            }, 2000);
         });
 
         await p;

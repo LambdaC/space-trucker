@@ -1,9 +1,10 @@
-import { ArcRotateCamera, CreateCylinder, Engine, HemisphericLight, Scalar, Scene, Sound, StandardMaterial, Texture, Vector3, setAndStartTimer } from "@babylonjs/core";
-import { AdvancedDynamicTexture, Rectangle, Image, Grid, TextBlock, TextWrapping, Control, Button } from "@babylonjs/gui";
+import { ArcRotateCamera, CreateCylinder, Engine, HemisphericLight, Observable, Scalar, Scene, Sound, StandardMaterial, Texture, Vector3, setAndStartTimer } from "@babylonjs/core";
+import { AdvancedDynamicTexture, Button, Control, Grid, Image, Rectangle, TextBlock, TextWrapping } from "@babylonjs/gui";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures/starfield/starfieldProceduralTexture";
 import menuBackground from "../assets/menuBackground.png";
-import logger from "./logger";
 import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
+import selectionIcon from "../assets/ui-selection-icon.png";
+import logger from "./logger";
 
 export class MainMenuScene {
 
@@ -13,6 +14,10 @@ export class MainMenuScene {
     private _menuGrid!: Grid;
     private _menuContainer!: Rectangle;
     private _music: Sound;
+    private _selectorIcon!: Image;
+    private _selectorAnimationFrame = 0;
+    private _selectedItemIndex = 0;
+    private _selectedItemChanged: Observable<number>;
 
     constructor(engine: Engine) {
         this._engine = engine;
@@ -20,6 +25,54 @@ export class MainMenuScene {
         this._music = new Sound("titleMusic", titleMusic, this._scene, () => logger.logInfo("loaded title music"), { autoplay: true, loop: true, volume: 1.5 });
         this._setupBackgroundEnviroment();
         this._setupUI();
+        this._createSelectorIcon();
+
+        this._selectedItemChanged = new Observable();
+        this._selectedItemChanged.add((idx) => {
+            const menuGrid = this._menuGrid;
+            const selectedItem = menuGrid.getChildrenAt(idx, 1);
+            if (selectedItem && selectedItem[0].isEnabled !== true) {
+                this.selectedItemIndex = 1 + idx;
+            }
+            this._selectorIcon.isVisible = true;
+            menuGrid.removeControl(this._selectorIcon);
+            menuGrid.addControl(this._selectorIcon, idx);
+        });
+
+        this._scene.whenReadyAsync().then(() => this.selectedItemIndex = 0);
+    }
+
+    get selectedItemIndex() {
+        return this._selectedItemIndex || -1;
+    }
+
+    set selectedItemIndex(idx) {
+        const itemCount = this._menuGrid.rowCount;
+        const newIdx = Scalar.Repeat(idx, itemCount);
+        this._selectedItemIndex = newIdx;
+        this._selectedItemChanged.notifyObservers(newIdx);
+    }
+
+    private _createSelectorIcon() {
+        this._selectorIcon = new Image("selectorIcon", selectionIcon);
+        this._selectorIcon.width = "160px";
+        this._selectorIcon.height = "60px";
+        this._selectorIcon.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+        this._selectorIcon.shadowOffsetX = 5;
+        this._selectorIcon.shadowOffsetY = 3;
+
+
+        this._selectorIcon.isVisible = false;
+        this._menuGrid.addControl(this._selectorIcon, 1, 0);
+        this._selectorAnimationFrame = 1;
+        this._scene.onBeforeRenderObservable.add(() => this._selectorIconAnimation());
+    }
+
+    private _selectorIconAnimation() {
+        const animTimeSeconds = Math.PI * 2;
+        const dT = this._scene.getEngine().getDeltaTime() / 1000;
+        this._selectorAnimationFrame = Scalar.Repeat(this._selectorAnimationFrame + dT * 5, animTimeSeconds * 10);
+        this._selectorIcon.top = Math.sin(this._selectorAnimationFrame).toFixed(0) + "px";
     }
 
     private _setupBackgroundEnviroment() {
@@ -118,6 +171,26 @@ export class MainMenuScene {
 
         const exitButton = createMenuItem(ebOpts);
         this._menuGrid.addControl(exitButton, this._menuGrid.children.length, 1);
+        // this._menu.addControl(exitButton);
+    }
+
+    _onMenuEnter(duration: number) {
+        let fadeIn = 0;
+        const fadeTime = duration || 1500;
+        const timer = setAndStartTimer({
+            timeout: fadeTime,
+            contextObservable: this._scene.onBeforeRenderObservable,
+            onTick: () => {
+                const dT = this._scene.getEngine().getDeltaTime();
+                fadeIn += dT;
+                const currAmt = Scalar.SmoothStep(0, 1, fadeIn / fadeTime);
+                this._menuContainer.alpha = currAmt;
+            },
+            onEnded: () => {
+                this.selectedItemIndex = 0;
+            }
+        });
+        return timer;
     }
 
     private _onMenuLeave(duration: number) {

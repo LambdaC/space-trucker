@@ -27,7 +27,7 @@ class AppStateMachine<T> {
     }
 
     get isChanged(): boolean {
-        return this._currentState === this._previousState;
+        return this._currentState !== this._previousState;
     }
 
 

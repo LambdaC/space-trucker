@@ -1,6 +1,6 @@
 import { Engine } from '@babylonjs/core';
 import { SpaceTruckerApplication } from './SpaceTruckerApplication';
-import { SpaceTruckerLoadingScreen } from './SpaceTruckerLoadingScreen';
+import { SpaceTruckerLoadingScreen } from './scenes/SpaceTruckerLoadingScreen';
 import logger from './logger';
 
 

@@ -1,6 +1,6 @@
 import { Engine, Scene } from "@babylonjs/core";
 import { AppStates } from "./appstates";
-import { MainMenuScene } from "./MainMenuScene";
+import { MainMenuScene } from "./scenes/MainMenuScene";
 
 class AppStateMachine<T> {
     private _previousState: T | null = null;

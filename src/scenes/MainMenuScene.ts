@@ -4,7 +4,7 @@ import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures/starf
 import menuBackground from "../assets/menuBackground.png";
 import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
 import selectionIcon from "../assets/ui-selection-icon.png";
-import logger from "./logger";
+import logger from "../logger";
 
 export class MainMenuScene {
 

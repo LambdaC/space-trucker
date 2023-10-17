@@ -1,4 +1,4 @@
-import { Animation, AnimationGroup, Mesh, Observable, Scene } from "@babylonjs/core";
+import { Animation, AnimationGroup, Mesh, Scene } from "@babylonjs/core";
 
 export class CutSceneSegment {
 
@@ -6,7 +6,7 @@ export class CutSceneSegment {
 
     public loopAnimation: boolean = false;
 
-    constructor(private _target: any, private _scene: Scene, animationSequence: Animation[]) {
+    constructor(private _target: Mesh, private _scene: Scene, animationSequence: Animation[]) {
 
         this.animationGroup = new AnimationGroup(this._target.name + "-animGroupCS", this._scene);
 

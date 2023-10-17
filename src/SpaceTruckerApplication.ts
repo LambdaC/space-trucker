@@ -1,6 +1,7 @@
 import { Engine, Scene } from "@babylonjs/core";
 import { AppStates } from "./appstates";
 import { MainMenuScene } from "./scenes/MainMenuScene";
+import { SplashScene } from "./scenes/SplashScene";
 
 class AppStateMachine<T> {
     private _previousState: T | null = null;
@@ -37,8 +38,9 @@ export class SpaceTruckerApplication {
 
     private _engine: Engine;
     private _stateMachine: AppStateMachine<AppStates>;
-    private _activeScene: Scene | null = null;
-    private _mainMenu: MainMenuScene | null = null;
+    private _activeScene?: Scene;
+    private _mainMenu!: MainMenuScene;
+    private _splashScene!: SplashScene;
 
     constructor(engine: Engine) {
         this._engine = engine;
@@ -46,17 +48,16 @@ export class SpaceTruckerApplication {
     }
 
     public async run() {
-        this._engine.runRenderLoop(async () => {
-            await this._updateState();
-            this._activeScene?.render();
+        this._engine.runRenderLoop(() => {
+            this._render();
         });
 
     }
 
-    private async _updateState() {
-        if (!this._stateMachine.isChanged) {
-            return;
-        }
+    private _render() {
+        // if (!this._stateMachine.isChanged) {
+        //     return;
+        // }
 
         // 先保存一下当前的state,下面的方法可能会改变当前state。
         const state = this._stateMachine.state;
@@ -88,30 +89,25 @@ export class SpaceTruckerApplication {
         this._stateMachine.state = AppStates.INITIALIZING;
     }
 
-    private async _initialize() {
+    private _initialize() {
+        if (!this._stateMachine.isChanged) {
+            return;
+        }
+
+        this._splashScene = new SplashScene(this._engine);
+        this._mainMenu = new MainMenuScene(this._engine);
         // 模拟加载资源
         this._engine.displayLoadingUI();
-        const p = new Promise<void>((resolve) => {
-            setTimeout(() => {
-                resolve();
-            }, 2000);
-        });
-
-        await p;
 
         this._engine.hideLoadingUI();
         this._stateMachine.state = AppStates.CUTSCENE;
     }
 
     private _gotoCutScene() {
-        this._stateMachine.state = AppStates.MENU;
+        this._splashScene.scene.render();
     }
 
     private _gotoMainMenu() {
-        this._engine.displayLoadingUI();
-        this._mainMenu = new MainMenuScene(this._engine);
-        this._activeScene = this._mainMenu.scene;
-        this._engine.hideLoadingUI();
+        this._mainMenu?.scene.render();
     }
-
 }

@@ -1,12 +1,12 @@
 import logger from "@/logger";
 import { Animation, ArcRotateCamera, Camera, Color3, Color4, Engine, HemisphericLight, Mesh, MeshBuilder, Observable, Scene, Sound, StandardMaterial, Texture, Vector3 } from "@babylonjs/core";
-import babylonLogoUrl from "../assets/babylonjs_identity_color.png";
-import poweredByUrl from "../assets/powered-by.png";
-import spaceTruckerRigUrl from "../assets/space-trucker-and-rig.png";
-import communityUrl from "../assets/splash-screen-community.png";
+import babylonLogoUrl from "@/../assets/babylonjs_identity_color.png";
+import poweredByUrl from "@/../assets/powered-by.png";
+import spaceTruckerRigUrl from "@/../assets/space-trucker-and-rig.png";
+import communityUrl from "@/../assets/splash-screen-community.png";
 import { CutSceneSegment } from "./CutSceneSegment";
 import { IScene } from "./IScene";
-import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
+import titleMusic from "@/../assets/sounds/space-trucker-title-theme.m4a";
 
 const animationFps = 30;
 const flipAnimation = new Animation("flip", "rotation.x", animationFps, Animation.ANIMATIONTYPE_FLOAT, 0, true);
@@ -24,6 +24,7 @@ export class SplashScene implements IScene {
     private _communityProduction!: CutSceneSegment;
     private _callToAction!: CutSceneSegment;
     private _currentSegment?: CutSceneSegment;
+    private _previousSegment?: CutSceneSegment;
 
     private _light: HemisphericLight;
     private _camera: Camera;
@@ -50,7 +51,10 @@ export class SplashScene implements IScene {
     }
 
     update() {
-
+        if (this._previousSegment !== this._currentSegment) {
+            this._currentSegment?.start();
+        }
+        this._previousSegment = this._currentSegment;
     }
 
     private _initialize() {
@@ -102,11 +106,11 @@ export class SplashScene implements IScene {
             titleMusic,
             this._scene,
             () => {
+                // 通知准备就绪
                 this._onReadyObservable.notifyObservers();
             },
             { autoplay: false, loop: false, volume: .01 });
 
-        // 通知准备就绪
     }
 
     private _createBillboard(): Mesh {
@@ -152,6 +156,7 @@ export class SplashScene implements IScene {
         const seg = new CutSceneSegment(this._billboard, this._scene, [fadeAnimation, scaleAnimation]);
         return seg;
     }
+
     private _createCommunityProduction(): CutSceneSegment {
         const start = 0;
         const enterTime = 4.0;
@@ -169,9 +174,10 @@ export class SplashScene implements IScene {
 
         fadeAnimation.setKeys(keys);
 
-        const seg2 = new CutSceneSegment(this._billboard, this.scene, [fadeAnimation]);
+        const seg2 = new CutSceneSegment(this._billboard, this._scene, [fadeAnimation]);
         return seg2;
     }
+
     private _createBabylonBillboard(): CutSceneSegment {
         const start = 0;
         const enterTime = 2.5;
@@ -188,7 +194,7 @@ export class SplashScene implements IScene {
         ];
         fadeAnimation.setKeys(keys);
 
-        const seg1 = new CutSceneSegment(this._billboard, this.scene, [fadeAnimation]);
+        const seg1 = new CutSceneSegment(this._billboard, this._scene, [fadeAnimation]);
         return seg1;
     }
 
@@ -217,12 +223,12 @@ export class SplashScene implements IScene {
         ];
         flipAnimation.setKeys(flipKeys);
 
-        const seg0 = new CutSceneSegment(this._billboard, this.scene, [fadeAnimation, flipAnimation]);
+        const seg0 = new CutSceneSegment(this._billboard, this._scene, [fadeAnimation, flipAnimation]);
         return seg0;
     }
 
     run() {
-        this._currentSegment = this._powerBy;
+        this._previousSegment = this._currentSegment = this._powerBy;
         this._music.play();
         this._music.setVolume(0.998, 400);
         this._currentSegment.start();

@@ -89,6 +89,7 @@ export class SpaceTruckerApplication {
                     this._gotoMainMenu();
                     logger.logInfo("in application onRender - skipping splash screen message");
                 }
+                this._currentScene?.update();
                 break;
             case AppStates.MENU:
                 break;

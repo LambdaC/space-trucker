@@ -1,6 +1,6 @@
 import { ArcRotateCamera, AxesViewer, Color3, Engine, GlowLayer, IEnvironmentHelperOptions, MeshBuilder, PointLight, Scalar, Scene, StandardMaterial, Texture, Vector3 } from "@babylonjs/core";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures";
-import distortTexture from "../assets/textures/distortion.png";
+import distortTexture from "@/../assets/textures/distortion.png";
 import { AstroFactory } from "../astroFactory";
 
 /**

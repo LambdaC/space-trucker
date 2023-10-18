@@ -24,6 +24,6 @@ export class CutSceneSegment {
     }
 
     get onEnd() {
-        return this.animationGroup.onAnimationEndObservable;
+        return this.animationGroup.onAnimationGroupEndObservable;
     }
 }

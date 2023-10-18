@@ -1,9 +1,9 @@
 import { ArcRotateCamera, CreateCylinder, Engine, HemisphericLight, Observable, Scalar, Scene, Sound, StandardMaterial, Texture, Vector3, setAndStartTimer } from "@babylonjs/core";
 import { AdvancedDynamicTexture, Button, Control, Grid, Image, Rectangle, TextBlock, TextWrapping } from "@babylonjs/gui";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures/starfield/starfieldProceduralTexture";
-import menuBackground from "../assets/menuBackground.png";
+import menuBackground from "@/../assets/menuBackground.png";
 // import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
-import selectionIcon from "../assets/ui-selection-icon.png";
+import selectionIcon from "@/../assets/ui-selection-icon.png";
 import logger from "../logger";
 import { IScene } from "./IScene";
 

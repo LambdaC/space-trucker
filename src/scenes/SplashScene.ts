@@ -1,17 +1,19 @@
 import logger from "@/logger";
-import { Animation, ArcRotateCamera, Camera, Color3, Color4, Engine, HemisphericLight, Mesh, MeshBuilder, Scene, StandardMaterial, Texture, Vector3 } from "@babylonjs/core";
+import { Animation, ArcRotateCamera, Camera, Color3, Color4, Engine, HemisphericLight, Mesh, MeshBuilder, Observable, Scene, Sound, StandardMaterial, Texture, Vector3 } from "@babylonjs/core";
 import babylonLogoUrl from "../assets/babylonjs_identity_color.png";
 import poweredByUrl from "../assets/powered-by.png";
 import spaceTruckerRigUrl from "../assets/space-trucker-and-rig.png";
 import communityUrl from "../assets/splash-screen-community.png";
 import { CutSceneSegment } from "./CutSceneSegment";
+import { IScene } from "./IScene";
+import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
 
 const animationFps = 30;
 const flipAnimation = new Animation("flip", "rotation.x", animationFps, Animation.ANIMATIONTYPE_FLOAT, 0, true);
 const fadeAnimation = new Animation("entranceAndExitFade", "visibility", animationFps, Animation.ANIMATIONTYPE_FLOAT, 0, true);
 const scaleAnimation = new Animation("scaleTarget", "scaling", animationFps, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CYCLE, true);
 
-export class SplashScene {
+export class SplashScene implements IScene {
 
     private _scene: Scene;
 
@@ -26,6 +28,12 @@ export class SplashScene {
     private _light: HemisphericLight;
     private _camera: Camera;
 
+    private _onReadyObservable: Observable<void> = new Observable();
+
+    private _music!: Sound;
+
+    private _skipRequested = false;
+
     constructor(private _engine: Engine) {
         this._scene = new Scene(this._engine);
         this._scene.clearColor = new Color4(0, 0, 0, 1.0);
@@ -35,6 +43,14 @@ export class SplashScene {
         this._light.intensity = 0.5;
 
         this._initialize();
+    }
+
+    handleInput() {
+
+    }
+
+    update() {
+
     }
 
     private _initialize() {
@@ -51,8 +67,6 @@ export class SplashScene {
 
         const billMat = this._billboard.material as StandardMaterial;
         billMat.diffuseTexture = poweredTexture;
-
-        this._currentSegment = this._powerBy;
 
         this._powerBy.onEnd.addOnce(() => {
             logger.logInfo("powered End");
@@ -81,7 +95,18 @@ export class SplashScene {
 
         this._callToAction.onEnd.addOnce(() => {
             logger.logInfo("callToAction end");
+            this._skipRequested = true;
         });
+
+        this._music = new Sound("theme",
+            titleMusic,
+            this._scene,
+            () => {
+                this._onReadyObservable.notifyObservers();
+            },
+            { autoplay: false, loop: false, volume: .01 });
+
+        // 通知准备就绪
     }
 
     private _createBillboard(): Mesh {
@@ -196,7 +221,22 @@ export class SplashScene {
         return seg0;
     }
 
+    run() {
+        this._currentSegment = this._powerBy;
+        this._music.play();
+        this._music.setVolume(0.998, 400);
+        this._currentSegment.start();
+    }
+
     get scene() {
         return this._scene;
+    }
+
+    get onReadyObservable() {
+        return this._onReadyObservable;
+    }
+
+    get skipRequested() {
+        return this._skipRequested;
     }
 }

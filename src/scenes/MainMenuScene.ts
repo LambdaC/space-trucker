@@ -2,18 +2,19 @@ import { ArcRotateCamera, CreateCylinder, Engine, HemisphericLight, Observable, 
 import { AdvancedDynamicTexture, Button, Control, Grid, Image, Rectangle, TextBlock, TextWrapping } from "@babylonjs/gui";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures/starfield/starfieldProceduralTexture";
 import menuBackground from "../assets/menuBackground.png";
-import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
+// import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
 import selectionIcon from "../assets/ui-selection-icon.png";
 import logger from "../logger";
+import { IScene } from "./IScene";
 
-export class MainMenuScene {
+export class MainMenuScene implements IScene {
 
     private _engine: Engine;
     private _scene!: Scene;
     private _menu!: AdvancedDynamicTexture;
     private _menuGrid!: Grid;
     private _menuContainer!: Rectangle;
-    private _music: Sound;
+    // private _music: Sound;
     private _selectorIcon!: Image;
     private _selectorAnimationFrame = 0;
     private _selectedItemIndex = 0;
@@ -22,7 +23,7 @@ export class MainMenuScene {
     constructor(engine: Engine) {
         this._engine = engine;
         this._scene = new Scene(engine);
-        this._music = new Sound("titleMusic", titleMusic, this._scene, () => logger.logInfo("loaded title music"), { autoplay: true, loop: true, volume: 1.5 });
+        // this._music = new Sound("titleMusic", titleMusic, this._scene, () => logger.logInfo("loaded title music"), { autoplay: true, loop: true, volume: 1.5 });
         this._setupBackgroundEnviroment();
         this._setupUI();
         this._createSelectorIcon();
@@ -40,6 +41,14 @@ export class MainMenuScene {
         });
 
         this._scene.whenReadyAsync().then(() => this.selectedItemIndex = 0);
+    }
+
+    handleInput() {
+
+    }
+
+    update() {
+
     }
 
     get selectedItemIndex() {
@@ -212,7 +221,7 @@ export class MainMenuScene {
             },
 
             onEnded: () => {
-                this._music.stop();
+                // this._music.stop();
             }
 
         });

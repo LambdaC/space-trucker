@@ -1,7 +1,9 @@
-import { Engine, Scene } from "@babylonjs/core";
+import { Engine } from "@babylonjs/core";
 import { AppStates } from "./appstates";
+import { IScene } from "./scenes/IScene";
 import { MainMenuScene } from "./scenes/MainMenuScene";
 import { SplashScene } from "./scenes/SplashScene";
+import logger from "./logger";
 
 class AppStateMachine<T> {
     private _previousState: T | null = null;
@@ -31,49 +33,64 @@ class AppStateMachine<T> {
         return this._currentState !== this._previousState;
     }
 
-
 }
 
 export class SpaceTruckerApplication {
 
     private _engine: Engine;
     private _stateMachine: AppStateMachine<AppStates>;
-    private _activeScene?: Scene;
+    private _currentScene?: IScene;
     private _mainMenu!: MainMenuScene;
     private _splashScene!: SplashScene;
+
 
     constructor(engine: Engine) {
         this._engine = engine;
         this._stateMachine = new AppStateMachine<AppStates>(AppStates.CREATED);
     }
 
-    public async run() {
+    public run() {
+        this._initialize();
+
         this._engine.runRenderLoop(() => {
+            this._handleInput();
+            this._update();
             this._render();
         });
 
     }
 
-    private _render() {
-        // if (!this._stateMachine.isChanged) {
-        //     return;
-        // }
+    private _initialize() {
+        this._stateMachine.state = AppStates.INITIALIZING;
+        this._engine.displayLoadingUI();
+        this._splashScene = new SplashScene(this._engine);
+        this._mainMenu = new MainMenuScene(this._engine);
 
+        this._splashScene.onReadyObservable.addOnce(() => {
+            this._engine.hideLoadingUI();
+            this._gotoCutScene();
+        });
+    }
+
+    private _handleInput() {
+
+    }
+
+    private _update() {
         // 先保存一下当前的state,下面的方法可能会改变当前state。
         const state = this._stateMachine.state;
 
         switch (state) {
             case AppStates.CREATED:
-                this._create();
-                break;
             case AppStates.INITIALIZING:
-                this._initialize();
                 break;
             case AppStates.CUTSCENE:
-                this._gotoCutScene();
+                if (this._splashScene.skipRequested) {
+                    this._gotoMainMenu();
+                    logger.logInfo("in application onRender - skipping splash screen message");
+                }
                 break;
             case AppStates.MENU:
-                this._gotoMainMenu();
                 break;
             case AppStates.RUNNING:
                 break;
@@ -85,29 +102,19 @@ export class SpaceTruckerApplication {
         this._stateMachine.previousState = state;
     }
 
-    private _create() {
-        this._stateMachine.state = AppStates.INITIALIZING;
-    }
-
-    private _initialize() {
-        if (!this._stateMachine.isChanged) {
-            return;
-        }
-
-        this._splashScene = new SplashScene(this._engine);
-        this._mainMenu = new MainMenuScene(this._engine);
-        // 模拟加载资源
-        this._engine.displayLoadingUI();
-
-        this._engine.hideLoadingUI();
-        this._stateMachine.state = AppStates.CUTSCENE;
+    private _render() {
+        this._currentScene?.scene.render();
     }
 
     private _gotoCutScene() {
-        this._splashScene.scene.render();
+        this._stateMachine.state = AppStates.CUTSCENE;
+        this._currentScene = this._splashScene;
+        this._splashScene.run();
     }
 
     private _gotoMainMenu() {
-        this._mainMenu?.scene.render();
+        this._stateMachine.state = AppStates.MENU;
+        // this._mainMenu.update();
+        this._currentScene = this._mainMenu;
     }
 }

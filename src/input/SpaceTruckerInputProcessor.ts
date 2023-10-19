@@ -33,7 +33,7 @@ export class SpaceTruckerInputProcessor {
     private _lastActionState?: { [key: string]: any };
     private _actionState: { [key: string]: any } = {};
 
-    private _actionMap!: { [key: string]: (...args: any[]) => any };
+    private _actionMap: { [key: string]: (...args: any[]) => any } = {};
 
     get screen() {
         return this._screen;

@@ -1,5 +1,5 @@
-import { ArcRotateCamera, CreateCylinder, Engine, HemisphericLight, Observable, Scalar, Scene, Sound, StandardMaterial, Texture, Vector3, setAndStartTimer } from "@babylonjs/core";
-import { AdvancedDynamicTexture, Button, Control, Grid, Image, Rectangle, TextBlock, TextWrapping } from "@babylonjs/gui";
+import { ArcRotateCamera, CreateCylinder, Engine, EventState, HemisphericLight, Observable, Scalar, Scene, Sound, StandardMaterial, Texture, Vector3, setAndStartTimer } from "@babylonjs/core";
+import { AdvancedDynamicTexture, Button, Control, Grid, Image, Rectangle, TextBlock, TextWrapping, Vector2WithInfo } from "@babylonjs/gui";
 import { StarfieldProceduralTexture } from "@babylonjs/procedural-textures/starfield/starfieldProceduralTexture";
 import menuBackground from "@/../assets/menuBackground.png";
 // import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
@@ -26,7 +26,7 @@ export class MainMenuScene implements IScreen {
     // private _music: Sound;
     private _selectorIcon!: Image;
     private _selectorAnimationFrame = 0;
-    private _selectedItemIndex = 0;
+    private _selectedItemIndex = -1;
     private _selectedItemChanged: Observable<number>;
 
     private _actionProcessor?: SpaceTruckerInputProcessor;
@@ -51,7 +51,7 @@ export class MainMenuScene implements IScreen {
     }
 
     get selectedItemIndex() {
-        return this._selectedItemIndex || -1;
+        return this._selectedItemIndex;
     }
 
     set selectedItemIndex(idx) {
@@ -80,21 +80,17 @@ export class MainMenuScene implements IScreen {
         this._selectedItemChanged = new Observable();
         this._selectedItemChanged.add((idx) => {
             const menuGrid = this._menuGrid;
-            const selectedItem = menuGrid.getChildrenAt(idx, 1);
-            if (selectedItem && selectedItem[0].isEnabled !== true) {
-                this.selectedItemIndex = 1 + idx;
-            }
+            // const selectedItem = menuGrid.getChildrenAt(idx, 1);
+            // if (selectedItem && selectedItem[0].isEnabled !== true) {
+            //     this.selectedItemIndex = 1 + idx;
+            // }
             this._selectorIcon.isVisible = true;
             menuGrid.removeControl(this._selectorIcon);
             menuGrid.addControl(this._selectorIcon, idx);
         });
 
-        this._scene.whenReadyAsync().then(() => this.selectedItemIndex = 0);
+        // this._scene.whenReadyAsync().then(() => this.selectedItemIndex = 0);
         this._actionProcessor = new SpaceTruckerInputProcessor(this, _inputManager, menuActionList);
-    }
-
-    handleInput() {
-
     }
 
     update() {
@@ -112,7 +108,7 @@ export class MainMenuScene implements IScreen {
 
         this._selectorIcon.isVisible = false;
         this._menuGrid.addControl(this._selectorIcon, 1, 0);
-        this._selectorAnimationFrame = 1;
+        this._selectorAnimationFrame = 0;
         this._scene.onBeforeRenderObservable.add(() => this._selectorIconAnimation());
     }
 
@@ -182,7 +178,7 @@ export class MainMenuScene implements IScreen {
             title: "Play",
             background: "red",
             color: "white",
-            onInvoked: () => {
+            onInvoked: (ed: Vector2WithInfo, es: EventState) => {
                 logger.logInfo("Play button clicked");
                 this._onMenuLeave(1000, () => this.onPlayActionObservable.notifyObservers())
             }
@@ -193,7 +189,7 @@ export class MainMenuScene implements IScreen {
             title: "Exit",
             background: "white",
             color: "black",
-            onInvoked: () => {
+            onInvoked: (ed: Vector2WithInfo, es: EventState) => {
                 logger.logInfo("Exit button clicked");
                 this._onMenuLeave(1000, () => this.onExitActionObservable.notifyObservers());
 
@@ -212,7 +208,7 @@ export class MainMenuScene implements IScreen {
             btn.fontSize = "36pt";
 
             if (opts.onInvoked) {
-                btn.onPointerClickObservable.add((ed, es) => opts.onInvoked());
+                btn.onPointerClickObservable.add((ed, es) => opts.onInvoked(ed, es));
             }
 
             return btn;

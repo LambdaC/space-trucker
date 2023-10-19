@@ -6,10 +6,11 @@ import spaceTruckerRigUrl from "@/../assets/space-trucker-and-rig.png";
 import communityUrl from "@/../assets/splash-screen-community.png";
 import { CutSceneSegment } from "./CutSceneSegment";
 import { IScreen } from "./IScreen";
-import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
+import titleMusic from "@/../assets/sounds/space-trucker-title-theme.m4a";
 import { SpaceTruckerInputManager } from "@/input/SpaceTruckerInputManager";
 import { InputAction } from "@/input/InputAction";
 import { SpaceTruckerInputProcessor } from "@/input/SpaceTruckerInputProcessor";
+import { AdvancedDynamicTexture, TextBlock, TextWrapping } from "@babylonjs/gui";
 
 const animationFps = 30;
 const flipAnimation = new Animation("flip", "rotation.x", animationFps, Animation.ANIMATIONTYPE_FLOAT, 0, true);
@@ -39,6 +40,9 @@ export class SplashScene implements IScreen {
 
     private _skipRequested = false;
     private _actionProcessor?: SpaceTruckerInputProcessor;
+
+    private _callToActionTexture!: AdvancedDynamicTexture;
+    private _tips!: TextBlock;
 
     get actionProcessor() {
         return this._actionProcessor;
@@ -76,7 +80,17 @@ export class SplashScene implements IScreen {
             this._currentSegment?.start();
         }
         this._actionProcessor?.update();
+
+        if (this.skipRequested) {
+            this?._currentSegment?.stop();
+            this._currentSegment = undefined;
+            this._previousSegment = undefined;
+            return;
+        }
         this._previousSegment = this._currentSegment;
+        if (!this._currentSegment?.animationGroup.isPlaying && this._currentSegment === this._callToAction) {
+            this._currentSegment.start();
+        }
     }
 
     private _initialize() {
@@ -117,12 +131,17 @@ export class SplashScene implements IScreen {
             this._billboard.visibility = 0;
             billMat.diffuseTexture = rigTexture;
             this._currentSegment = this._callToAction;
+            this._currentSegment.animationGroup.loopAnimation = true;
         });
 
         this._callToAction.onEnd.addOnce(() => {
             logger.logInfo("callToAction end");
             // this._skipRequested = true;
+            this._tips.isVisible = true;
         });
+
+
+        this._setupUI();
 
         this._music = new Sound("theme",
             titleMusic,
@@ -135,6 +154,20 @@ export class SplashScene implements IScreen {
 
         this._actionProcessor = new SpaceTruckerInputProcessor(this, this._inputManager, actionList);
 
+    }
+
+    private _setupUI() {
+        let callToActionTexture =
+            this._callToActionTexture = AdvancedDynamicTexture.CreateFullscreenUI("splashGui");
+        let ctaBlock = this._tips = new TextBlock("ctaBlock", "Press any key or tap the screen to continue...");
+        ctaBlock.textWrapping = TextWrapping.WordWrap;
+        ctaBlock.color = "white";
+        ctaBlock.fontSize = "18pt";
+        ctaBlock.verticalAlignment =
+            ctaBlock.textVerticalAlignment = TextBlock.VERTICAL_ALIGNMENT_BOTTOM;
+        ctaBlock.paddingBottom = "12%";
+        ctaBlock.isVisible = false;
+        callToActionTexture.addControl(ctaBlock);
     }
 
     private _createBillboard(): Mesh {

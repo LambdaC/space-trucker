@@ -52,7 +52,6 @@ export class SpaceTruckerApplication {
         this._initialize();
 
         this._engine.runRenderLoop(() => {
-            this._handleInput();
             this._update();
             this._render();
         });
@@ -73,10 +72,6 @@ export class SpaceTruckerApplication {
 
         this._mainMenu.onExitActionObservable.addOnce(() => this._exit());
         this._mainMenu.onPlayActionObservable.add(() => this._goToRunningState());
-    }
-
-    private _handleInput() {
-
     }
 
     private _update() {
@@ -127,13 +122,14 @@ export class SpaceTruckerApplication {
     }
 
     private _goToRunningState() {
-
         this._mainMenu.actionProcessor?.detachControl();
         this._stateMachine.state = AppStates.RUNNING;
+        this._currentScene = undefined;
     }
 
     private _exit() {
         this._stateMachine.state = AppStates.EXITING;
+        this._currentScene = undefined;
         if (window) {
             this._engine.dispose();
             window.location?.reload();

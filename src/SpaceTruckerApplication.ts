@@ -1,9 +1,10 @@
 import { Engine } from "@babylonjs/core";
 import { AppStates } from "./appstates";
-import { IScene } from "./scenes/IScene";
+import { IScreen } from "./scenes/IScreen";
 import { MainMenuScene } from "./scenes/MainMenuScene";
 import { SplashScene } from "./scenes/SplashScene";
 import logger from "./logger";
+import { SpaceTruckerInputManager } from "./input/SpaceTruckerInputManager";
 
 class AppStateMachine<T> {
     private _previousState: T | null = null;
@@ -37,15 +38,13 @@ class AppStateMachine<T> {
 
 export class SpaceTruckerApplication {
 
-    private _engine: Engine;
     private _stateMachine: AppStateMachine<AppStates>;
-    private _currentScene?: IScene;
+    private _currentScene?: IScreen;
     private _mainMenu!: MainMenuScene;
     private _splashScene!: SplashScene;
+    private _inputManager!: SpaceTruckerInputManager;
 
-
-    constructor(engine: Engine) {
-        this._engine = engine;
+    constructor(private _engine: Engine) {
         this._stateMachine = new AppStateMachine<AppStates>(AppStates.CREATED);
     }
 
@@ -63,13 +62,17 @@ export class SpaceTruckerApplication {
     private _initialize() {
         this._stateMachine.state = AppStates.INITIALIZING;
         this._engine.displayLoadingUI();
-        this._splashScene = new SplashScene(this._engine);
-        this._mainMenu = new MainMenuScene(this._engine);
+        this._inputManager = new SpaceTruckerInputManager(this._engine);
+        this._splashScene = new SplashScene(this._engine, this._inputManager);
+        this._mainMenu = new MainMenuScene(this._engine, this._inputManager);
 
         this._splashScene.onReadyObservable.addOnce(() => {
             this._engine.hideLoadingUI();
             this._gotoCutScene();
         });
+
+        this._mainMenu.onExitActionObservable.addOnce(() => this._exit());
+        this._mainMenu.onPlayActionObservable.add(() => this._goToRunningState());
     }
 
     private _handleInput() {
@@ -89,9 +92,10 @@ export class SpaceTruckerApplication {
                     this._gotoMainMenu();
                     logger.logInfo("in application onRender - skipping splash screen message");
                 }
-                this._currentScene?.update();
+                this._splashScene.update();
                 break;
             case AppStates.MENU:
+                this._mainMenu.update();
                 break;
             case AppStates.RUNNING:
                 break;
@@ -110,12 +114,29 @@ export class SpaceTruckerApplication {
     private _gotoCutScene() {
         this._stateMachine.state = AppStates.CUTSCENE;
         this._currentScene = this._splashScene;
+        this._splashScene.actionProcessor?.attachControl();
         this._splashScene.run();
     }
 
     private _gotoMainMenu() {
+        this._splashScene.actionProcessor?.detachControl();
         this._stateMachine.state = AppStates.MENU;
         // this._mainMenu.update();
         this._currentScene = this._mainMenu;
+        this._mainMenu.actionProcessor?.attachControl();
+    }
+
+    private _goToRunningState() {
+
+        this._mainMenu.actionProcessor?.detachControl();
+        this._stateMachine.state = AppStates.RUNNING;
+    }
+
+    private _exit() {
+        this._stateMachine.state = AppStates.EXITING;
+        if (window) {
+            this._engine.dispose();
+            window.location?.reload();
+        }
     }
 }

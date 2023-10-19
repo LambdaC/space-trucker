@@ -5,15 +5,19 @@ import poweredByUrl from "@/../assets/powered-by.png";
 import spaceTruckerRigUrl from "@/../assets/space-trucker-and-rig.png";
 import communityUrl from "@/../assets/splash-screen-community.png";
 import { CutSceneSegment } from "./CutSceneSegment";
-import { IScene } from "./IScene";
-import titleMusic from "@/../assets/sounds/space-trucker-title-theme.m4a";
+import { IScreen } from "./IScreen";
+import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
+import { SpaceTruckerInputManager } from "@/input/SpaceTruckerInputManager";
+import { InputAction } from "@/input/InputAction";
+import { SpaceTruckerInputProcessor } from "@/input/SpaceTruckerInputProcessor";
 
 const animationFps = 30;
 const flipAnimation = new Animation("flip", "rotation.x", animationFps, Animation.ANIMATIONTYPE_FLOAT, 0, true);
 const fadeAnimation = new Animation("entranceAndExitFade", "visibility", animationFps, Animation.ANIMATIONTYPE_FLOAT, 0, true);
 const scaleAnimation = new Animation("scaleTarget", "scaling", animationFps, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CYCLE, true);
 
-export class SplashScene implements IScene {
+const actionList: InputAction[] = [{ action: "ACTIVATE", shouldBounce: () => true }];
+export class SplashScene implements IScreen {
 
     private _scene: Scene;
 
@@ -34,8 +38,25 @@ export class SplashScene implements IScene {
     private _music!: Sound;
 
     private _skipRequested = false;
+    private _actionProcessor?: SpaceTruckerInputProcessor;
 
-    constructor(private _engine: Engine) {
+    get actionProcessor() {
+        return this._actionProcessor;
+    }
+
+    get scene() {
+        return this._scene;
+    }
+
+    get onReadyObservable() {
+        return this._onReadyObservable;
+    }
+
+    get skipRequested() {
+        return this._skipRequested;
+    }
+
+    constructor(private _engine: Engine, private _inputManager: SpaceTruckerInputManager) {
         this._scene = new Scene(this._engine);
         this._scene.clearColor = new Color4(0, 0, 0, 1.0);
         this._camera = new ArcRotateCamera("camera", 0, Math.PI / 2, 5, Vector3.Zero(), this._scene);
@@ -54,6 +75,7 @@ export class SplashScene implements IScene {
         if (this._previousSegment !== this._currentSegment) {
             this._currentSegment?.start();
         }
+        this._actionProcessor?.update();
         this._previousSegment = this._currentSegment;
     }
 
@@ -99,7 +121,7 @@ export class SplashScene implements IScene {
 
         this._callToAction.onEnd.addOnce(() => {
             logger.logInfo("callToAction end");
-            this._skipRequested = true;
+            // this._skipRequested = true;
         });
 
         this._music = new Sound("theme",
@@ -110,6 +132,8 @@ export class SplashScene implements IScene {
                 this._onReadyObservable.notifyObservers();
             },
             { autoplay: false, loop: false, volume: .01 });
+
+        this._actionProcessor = new SpaceTruckerInputProcessor(this, this._inputManager, actionList);
 
     }
 
@@ -234,15 +258,16 @@ export class SplashScene implements IScene {
         this._currentSegment.start();
     }
 
-    get scene() {
-        return this._scene;
+    /** SpaceTruckerInputProcessor will call it */
+    ACTIVATE(state: { [key: string]: any }) {
+        const lastState = state.priorState;
+        if (!this._skipRequested && !lastState) {
+            logger.logInfo("Key press detected. Skipping cut scene.");
+            this._skipRequested = true;
+            return true;
+        }
+        return false;
     }
 
-    get onReadyObservable() {
-        return this._onReadyObservable;
-    }
 
-    get skipRequested() {
-        return this._skipRequested;
-    }
 }

@@ -5,11 +5,20 @@ import menuBackground from "@/../assets/menuBackground.png";
 // import titleMusic from "../assets/sounds/space-trucker-title-theme.m4a";
 import selectionIcon from "@/../assets/ui-selection-icon.png";
 import logger from "../logger";
-import { IScene } from "./IScene";
+import { IScreen } from "./IScreen";
+import { SpaceTruckerInputManager } from "@/input/SpaceTruckerInputManager";
+import { SpaceTruckerInputProcessor } from "@/input/SpaceTruckerInputProcessor";
 
-export class MainMenuScene implements IScene {
+const menuActionList = [
+    { action: 'ACTIVATE', shouldBounce: () => true },
+    { action: 'MOVE_UP', shouldBounce: () => true },
+    { action: 'MOVE_DOWN', shouldBounce: () => true },
+    { action: 'MOVE_RIGHT', shouldBounce: () => true },
+    { action: 'MOVE_LEFT', shouldBounce: () => true },
+    { action: 'GO_BACK', shouldBounce: () => true }
+];
+export class MainMenuScene implements IScreen {
 
-    private _engine: Engine;
     private _scene!: Scene;
     private _menu!: AdvancedDynamicTexture;
     private _menuGrid!: Grid;
@@ -20,9 +29,49 @@ export class MainMenuScene implements IScene {
     private _selectedItemIndex = 0;
     private _selectedItemChanged: Observable<number>;
 
-    constructor(engine: Engine) {
-        this._engine = engine;
-        this._scene = new Scene(engine);
+    private _actionProcessor?: SpaceTruckerInputProcessor;
+
+    private _onPlayActionObservable = new Observable<void>();
+    private _onExitActionObservable = new Observable<void>();
+
+    get onPlayActionObservable() {
+        return this._onPlayActionObservable;
+    }
+
+    get onExitActionObservable() {
+        return this._onExitActionObservable;
+    }
+
+    get actionProcessor() {
+        return this._actionProcessor;
+    }
+
+    get scene(): Scene {
+        return this._scene;
+    }
+
+    get selectedItemIndex() {
+        return this._selectedItemIndex || -1;
+    }
+
+    set selectedItemIndex(idx) {
+        const itemCount = this._menuGrid.rowCount;
+        const newIdx = Scalar.Repeat(idx, itemCount);
+        this._selectedItemIndex = newIdx;
+        this._selectedItemChanged.notifyObservers(newIdx);
+    }
+
+
+    get selectedItem() {
+        const row = this._menuGrid.getChildrenAt(this.selectedItemIndex, 1);
+        if (row && row.length) {
+            return row[0];
+        }
+        return null;
+    }
+
+    constructor(private _engine: Engine, private _inputManager: SpaceTruckerInputManager) {
+        this._scene = new Scene(this._engine);
         // this._music = new Sound("titleMusic", titleMusic, this._scene, () => logger.logInfo("loaded title music"), { autoplay: true, loop: true, volume: 1.5 });
         this._setupBackgroundEnviroment();
         this._setupUI();
@@ -41,6 +90,7 @@ export class MainMenuScene implements IScene {
         });
 
         this._scene.whenReadyAsync().then(() => this.selectedItemIndex = 0);
+        this._actionProcessor = new SpaceTruckerInputProcessor(this, _inputManager, menuActionList);
     }
 
     handleInput() {
@@ -48,18 +98,7 @@ export class MainMenuScene implements IScene {
     }
 
     update() {
-
-    }
-
-    get selectedItemIndex() {
-        return this._selectedItemIndex || -1;
-    }
-
-    set selectedItemIndex(idx) {
-        const itemCount = this._menuGrid.rowCount;
-        const newIdx = Scalar.Repeat(idx, itemCount);
-        this._selectedItemIndex = newIdx;
-        this._selectedItemChanged.notifyObservers(newIdx);
+        this._actionProcessor?.update();
     }
 
     private _createSelectorIcon() {
@@ -143,7 +182,10 @@ export class MainMenuScene implements IScene {
             title: "Play",
             background: "red",
             color: "white",
-            onInvoked: () => logger.logInfo("Play button clicked")
+            onInvoked: () => {
+                logger.logInfo("Play button clicked");
+                this._onMenuLeave(1000, () => this.onPlayActionObservable.notifyObservers())
+            }
         };
 
         const ebOpts = {
@@ -153,7 +195,8 @@ export class MainMenuScene implements IScene {
             color: "black",
             onInvoked: () => {
                 logger.logInfo("Exit button clicked");
-                this._onMenuLeave(1000);
+                this._onMenuLeave(1000, () => this.onExitActionObservable.notifyObservers());
+
             }
         }
 
@@ -183,7 +226,7 @@ export class MainMenuScene implements IScene {
         // this._menu.addControl(exitButton);
     }
 
-    _onMenuEnter(duration: number) {
+    _onMenuEnter(duration: number, onEndedAction: () => void) {
         let fadeIn = 0;
         const fadeTime = duration || 1500;
         const timer = setAndStartTimer({
@@ -202,7 +245,7 @@ export class MainMenuScene implements IScene {
         return timer;
     }
 
-    private _onMenuLeave(duration: number) {
+    private _onMenuLeave(duration: number, onEndedAction: () => void) {
         let fadeOut = 0;
         const fadeTime = duration || 1500;
 
@@ -222,6 +265,7 @@ export class MainMenuScene implements IScene {
 
             onEnded: () => {
                 // this._music.stop();
+                onEndedAction();
             }
 
         });
@@ -229,7 +273,49 @@ export class MainMenuScene implements IScene {
         return timer;
     }
 
-    get scene(): Scene {
-        return this._scene;
+    MOVE_UP(state: { [key: string]: any }) {
+        logger.logInfo("MOVE_UP");
+        const lastState = state.priorState;
+
+        if (!lastState) {
+            const oldIdx = this.selectedItemIndex;
+            const newIdx = oldIdx - 1;
+            this.selectedItemIndex = newIdx;
+
+        }
+        return true;
+
+    }
+
+    MOVE_DOWN(state: { [key: string]: any }) {
+        const lastState = state.priorState;
+        if (!lastState) {
+            const oldIdx = this.selectedItemIndex;
+            const newIdx = oldIdx + 1;
+            logger.logInfo("MOVE_DOWN " + newIdx);
+            this.selectedItemIndex = newIdx;
+        }
+        return lastState;
+
+    }
+
+    ACTIVATE(state: { [key: string]: any }) {
+        const lastState = state.priorState;
+
+        if (!lastState) {
+            // this is the first time through this action handler for this button press sequence
+            console.log("ACIVATE - " + this.selectedItemIndex);
+            const selectedItem = this.selectedItem;
+            if (selectedItem) {
+                selectedItem.onPointerClickObservable.notifyObservers(null as any);
+            }
+
+        }
+        // indicate interest in maintaining state by returning anything other than 0, null, undefined, or false
+        return true;
+    }
+
+    GO_BACK() {
+        return false;
     }
 }

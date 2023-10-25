@@ -12,6 +12,9 @@ export class OrbitingGameObject extends BaseGameObject {
     private _orbitalCircumfrence = 0.0;
     private _autoUpdatePosition = false;
 
+    set autoUpdatePosition(value: boolean) { this._autoUpdatePosition = value; }
+    get autoUpdatePosition() { return this._autoUpdatePosition; }
+
     constructor(scene: Scene, orbitalData: any) {
         super(scene);
 

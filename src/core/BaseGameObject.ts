@@ -19,9 +19,11 @@ export class BaseGameObject {
     get physicsImpostor() { return this._mesh.physicsImpostor; }
     set physicsImpostor(value) { this._mesh.physicsImpostor = value; }
 
-    get scene(): Scene {
-        return this._scene;
-    }
+    get scene(): Scene { return this._scene; }
+
+    set mesh(value: Mesh) { this._mesh = value; }
+
+    get mesh() { return this._mesh };
 
     constructor(protected _scene: Scene) {
         this._scene.onDisposeObservable.add(() => this.dispose());

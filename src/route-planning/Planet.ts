@@ -8,7 +8,7 @@ export class Planet extends OrbitingGameObject {
     constructor(scene: Scene, private _planetData: any) {
         super(scene, _planetData);
 
-        const planet = this._mesh = MeshBuilder.CreateSphere(_planetData.name, { diameter: _planetData.scale }, this.scene);
+        const planet = this.mesh = MeshBuilder.CreateSphere(_planetData.name, { diameter: _planetData.scale }, this.scene);
 
         this._diameter = _planetData.scale;
         planet.rotation.x = Math.PI;
